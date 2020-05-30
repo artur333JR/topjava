@@ -3,11 +3,12 @@ package ru.javawebinar.topjava.util;
 import ru.javawebinar.topjava.model.UserMeal;
 import ru.javawebinar.topjava.model.UserMealWithExcess;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Month;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class UserMealsUtil {
     public static void main(String[] args) {
@@ -24,16 +25,44 @@ public class UserMealsUtil {
         List<UserMealWithExcess> mealsTo = filteredByCycles(meals, LocalTime.of(7, 0), LocalTime.of(12, 0), 2000);
         mealsTo.forEach(System.out::println);
 
-//        System.out.println(filteredByStreams(meals, LocalTime.of(7, 0), LocalTime.of(12, 0), 2000));
+        System.out.println(filteredByStreams(meals, LocalTime.of(7, 0), LocalTime.of(12, 0), 2000));
     }
 
     public static List<UserMealWithExcess> filteredByCycles(List<UserMeal> meals, LocalTime startTime, LocalTime endTime, int caloriesPerDay) {
-        // TODO return filtered list with excess. Implement by cycles
-        return null;
+        Map<LocalDate, Integer> caloriesSums = new HashMap<>();
+        meals.forEach(userMeal -> caloriesSums.merge(userMeal.getDate(), userMeal.getCalories(), Integer::sum));
+
+        List<UserMealWithExcess> result = new ArrayList<>();
+        meals.forEach(userMeal -> { if (TimeUtil.isBetweenHalfOpen(userMeal.getTime(), startTime, endTime))
+                result.add(buildMealWithExcess(userMeal, caloriesSums.get(userMeal.getDate()), caloriesPerDay));
+        });
+        return result;
     }
 
+
     public static List<UserMealWithExcess> filteredByStreams(List<UserMeal> meals, LocalTime startTime, LocalTime endTime, int caloriesPerDay) {
-        // TODO Implement by streams
-        return null;
+        Map<LocalDate, Integer> caloriesSums = meals.stream()
+                .collect(Collectors.toMap(UserMeal::getDate, UserMeal::getCalories, Integer::sum));
+
+        return meals.stream()
+                .filter(userMeal -> TimeUtil.isBetweenHalfOpen(userMeal.getTime(), startTime, endTime))
+                .map(userMeal -> buildMealWithExcess(userMeal, caloriesSums.get(userMeal.getDate()), caloriesPerDay))
+                .collect(Collectors.toList());
+    }
+
+//    public static List<UserMealWithExcess> filteredByStreamsWithMyCollector(List<UserMeal> meals, LocalTime startTime, LocalTime endTime, int caloriesPerDay) {
+//        Map<LocalDate, Integer> caloriesSums = new HashMap<>();
+//        return meals.stream()
+//                .peek(userMeal -> caloriesSums.merge(userMeal.getDateTime().toLocalDate(), userMeal.getCalories(), Integer::sum))
+//                .filter(userMeal -> TimeUtil.isBetweenHalfOpen(userMeal.getTime(), startTime, endTime))
+//                .collect(Collectors.toList())
+//                .stream()
+//                .map(userMeal -> buildMealWithExcess(userMeal, caloriesSums.get(userMeal.getDate()), caloriesPerDay))
+//                .collect(Collectors.toList());
+//    }
+
+    private static UserMealWithExcess buildMealWithExcess(UserMeal userMeal, int caloriesSum, int caloriesPerDay) {
+        return new UserMealWithExcess(userMeal.getDateTime(), userMeal.getDescription(), userMeal.getCalories()
+                , caloriesSum > caloriesPerDay);
     }
 }
