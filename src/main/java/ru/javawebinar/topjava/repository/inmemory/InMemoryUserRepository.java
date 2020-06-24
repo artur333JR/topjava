@@ -16,6 +16,9 @@ import java.util.stream.Collectors;
 
 @Repository
 public class InMemoryUserRepository implements UserRepository {
+    public final static int ADMIN_ID = 1;
+    public final static int USER_ID = 2;
+
     private static final Logger log = LoggerFactory.getLogger(InMemoryUserRepository.class);
     private Map<Integer, User> userMap = new ConcurrentHashMap<>();
     private AtomicInteger counter = new AtomicInteger(0);
